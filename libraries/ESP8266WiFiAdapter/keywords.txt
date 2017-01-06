@@ -1,0 +1,15 @@
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+WiFiAdapter KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+######################################
+# Constants (LITERAL1)
+#######################################
+SERVER_SSID	LITERAL1
+SERVER_PASSWORD LITERAL1
+DEFAULT_WIFI_ADAPTER_MODE LITERAL1
