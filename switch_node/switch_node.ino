@@ -3,15 +3,15 @@
 #include <ArduinoJson.h>
 
 // extern initialization section
-char*   WIFI_AP_SSID        = "ESP8266";
+char*   WIFI_AP_SSID        = "JSH_SWITCH_001";
 char*   WIFI_AP_PASSWORD    = "";
 
-char*   MQTT_SERVER         = "fill in with your MQTT broker data";
-int     MQTT_PORT           = 12345;
-char*   MQTT_USER           = "fill in with your MQTT broker data";
-char*   MQTT_PASSWORD       = "fill in with your MQTT broker data";
-char*   MQTT_MODULE_ID      = "ESP8266";
-char*   MQTT_CLIENT_TOPIC   = "fill in with your MQTT broker data";
+char*   MQTT_SERVER         = "m20.cloudmqtt.com";
+int     MQTT_PORT           = 16528;
+char*   MQTT_USER           = "nstvwdlf";
+char*   MQTT_PASSWORD       = "VBkYGjOIzduG";
+char*   MQTT_MODULE_ID      = "24D6EE34E1CC48ED9F302C72A946222A";
+char*   MQTT_CLIENT_TOPIC   = "switch";
 
 int     IDLE_PIN            = 2;
 int     CLIENT_PIN          = 4;
@@ -46,6 +46,10 @@ void setupRequestHandler() {
   HttpRequestHandler.on("/ping", HTTP_GET, [](){
     HttpRequestHandler.send(200, CONTENT_TYPE_JSON, "{status: \"OK\"}");
   });
+  HttpRequestHandler.on("/module/info", HTTP_GET, [](){
+    char* body = getDeviceInfo();
+    HttpRequestHandler.send(200, CONTENT_TYPE_JSON, body);
+  });
   HttpRequestHandler.on("/networks", HTTP_GET, [](){
     char* body = scanNetworks();
     HttpRequestHandler.send(200, CONTENT_TYPE_JSON, body);
@@ -58,6 +62,16 @@ void setupRequestHandler() {
     StoredCredentials.create(ssid, password);
     HttpRequestHandler.send(200, CONTENT_TYPE_JSON, "{status: \"OK\"}");
   });
+}
+
+char* getDeviceInfo() {
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject();
+  root["moduleId"] = MQTT_MODULE_ID;
+  int jsonLength = root.measureLength() + 1;
+  char* buffer = new char[jsonLength];
+  root.printTo(buffer, jsonLength);
+  return buffer;
 }
 
 char* scanNetworks() {
