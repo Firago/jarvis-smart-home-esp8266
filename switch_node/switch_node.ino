@@ -3,17 +3,17 @@
 #include <ArduinoJson.h>
 
 // extern initialization section
-char*   WIFI_AP_SSID        = "JSH_SWITCH_001";
+char*   WIFI_AP_SSID        = "JSH_SWITCH1";
 char*   WIFI_AP_PASSWORD    = "";
 
-char*   MQTT_SERVER         = "m20.cloudmqtt.com";
-int     MQTT_PORT           = 16528;
-char*   MQTT_USER           = "nstvwdlf";
-char*   MQTT_PASSWORD       = "VBkYGjOIzduG";
+char*   MQTT_SERVER         = "172.24.1.1";
+int     MQTT_PORT           = 1883;
+char*   MQTT_USER           = "";
+char*   MQTT_PASSWORD       = "";
 char*   MQTT_MODULE_ID      = "24D6EE34E1CC48ED9F302C72A946222A";
-char*   MQTT_CLIENT_TOPIC   = "switch";
+char*   MQTT_CLIENT_TOPIC   = "consumers";
 
-int     IDLE_PIN            = 2;
+int     IDLE_PIN            = 16;
 int     CLIENT_PIN          = 4;
 int     SERVER_PIN          = 5;
 int     BUTTON_PIN          = 13;
@@ -22,29 +22,38 @@ int     SWITCH_PIN          = 14;
 const char* CONTENT_TYPE_JSON = "application/json";
 
 void mqttClientCallback(char* topic, byte* payload, unsigned int length) {
-  byte target[length];
-  for (int i = 0; i < length; ++i)
-    target[i] = payload[i];
-  String request((char*) target);
-  if (request == "ON") {
-    digitalWrite(SWITCH_PIN, HIGH);
-  } else if (request == "OFF") {
-    digitalWrite(SWITCH_PIN, LOW);
+  DynamicJsonBuffer jsonBuffer;
+  JsonObject& request = jsonBuffer.parseObject((char*) payload);
+  String deviceId = request["deviceId"];
+  if (deviceId == MQTT_MODULE_ID) {
+    String action = request["action"];
+    if (action == "turn on") {
+      digitalWrite(SWITCH_PIN, HIGH);
+    } else if (action == "turn off") {
+      digitalWrite(SWITCH_PIN, LOW);
+    }
   }
 }
 
 void setup() {
   Serial.begin(115200);
-  pinMode(BUTTON_PIN, INPUT);
   pinMode(SWITCH_PIN, OUTPUT);
-  attachInterrupt(BUTTON_PIN, startServer, RISING);
-  WiFiAdapter.changeMode(CLIENT);
+  pinMode(BUTTON_PIN, INPUT);
+  setAdapterMode();
   setupRequestHandler();
+}
+
+void setAdapterMode() {
+  if (digitalRead(BUTTON_PIN) == HIGH) {
+    WiFiAdapter.changeMode(SERVER);
+  } else {
+    WiFiAdapter.changeMode(CLIENT);
+  }
 }
 
 void setupRequestHandler() {
   HttpRequestHandler.on("/ping", HTTP_GET, [](){
-    HttpRequestHandler.send(200, CONTENT_TYPE_JSON, "{status: \"OK\"}");
+    HttpRequestHandler.send(200, CONTENT_TYPE_JSON, "{\"success\": \"true\"}");
   });
   HttpRequestHandler.on("/module/info", HTTP_GET, [](){
     char* body = getDeviceInfo();
@@ -60,7 +69,7 @@ void setupRequestHandler() {
     String ssid = root["ssid"];
     String password = root["password"];
     StoredCredentials.create(ssid, password);
-    HttpRequestHandler.send(200, CONTENT_TYPE_JSON, "{status: \"OK\"}");
+    HttpRequestHandler.send(200, CONTENT_TYPE_JSON, "{\"success\": \"true\"}");
   });
 }
 
@@ -113,23 +122,7 @@ String encryptionTypeStr(uint8_t authmode) {
   }
 }
 
-void startServer() {
-  detachInterrupt(BUTTON_PIN);
-  WiFiAdapter.changeMode(SERVER);
-  attachInterrupt(BUTTON_PIN, startClient, RISING);
-}
-
-void startClient() {
-  detachInterrupt(BUTTON_PIN);
-  WiFiAdapter.changeMode(CLIENT);
-  attachInterrupt(BUTTON_PIN, startServer, RISING);
-}
-
 void loop() {
   WiFiAdapter.loop();
-}
-
-boolean IdleRunnableClass::run() {
-  return true;
 }
 

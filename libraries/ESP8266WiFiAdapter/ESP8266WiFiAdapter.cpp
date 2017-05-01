@@ -24,6 +24,10 @@ boolean IdleRunnableClass::start() {
   return true;
 }
 
+boolean IdleRunnableClass::run() {
+  return true;
+}
+
 boolean IdleRunnableClass::stop() {
   digitalWrite(IDLE_PIN, LOW);
   return true;
